@@ -171,7 +171,7 @@ void loop() {
 
 
   if (toestand == DRAAIEN) {
-    Serial.println( "rijden");
+    Serial.println( "DRAAIEN");
     
     analogWrite(PWMA, 50);
     digitalWrite(AIN1, LOW);
