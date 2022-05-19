@@ -5,16 +5,24 @@
    v20201114GEE
 */
 #include "TRSensors.h"
+#include <Wire.h>
 
 #define NUM_SENSORS 5 // alle 5 de ir, sensors 0 through 5 are connected to analog inputs 0 through 5, respectively
 TRSensors trs =   TRSensors();
 unsigned int sensorValues[NUM_SENSORS];
 
-const int START = 0; // toestand is kalibreren
-const int SENSOR_LEZEN = 1; // toestand is sensor lezen
-const int RIJDEN = 2; // toestand is rijden in de richtingvan de lijn
-const int DRAAIEN = 3; // toestand is draaien
-int toestand = START;
+#define Addr  0x20
+#define beep_on  PCF8574Write(0xDF & PCF8574Read())
+#define beep_off PCF8574Write(0x20 | PCF8574Read())
+byte value;
+void PCF8574Write(byte data);
+byte PCF8574Read();
+
+const int START = 1; // toestand is kalibreren
+const int SENSOR_LEZEN = 2; // toestand is sensor lezen
+const int RIJDEN = 3; // toestand is rijden in de richtingvan de lijn
+const int DRAAIEN = 4; // toestand is draaien
+int toestand = 0;
 
 #define PWMA   6           //Left Motor Speed pin (ENA)
 #define AIN2   A0          //Motor-L forward (IN2).
@@ -23,112 +31,136 @@ int toestand = START;
 #define BIN1   A2          //Motor-R forward (IN3)
 #define BIN2   A3          //Motor-R backward (IN4)
 
-int knop = 12;
-int knopStatus = LOW;
+
 
 bool lijn = false;
 
+void PCF8574Write(byte data)
+  {
+    Wire.beginTransmission(Addr);
+    Wire.write(data);
+    Wire.endTransmission();
+  }
+
+byte PCF8574Read()
+  {
+    int data = -1;
+    Wire.requestFrom(Addr, 1);
+    if (Wire.available()) {
+      data = Wire.read();
+    }
+    return data;
+  }
+  
 void setup() {
   Serial.begin(115200);
 
-  pinMode(PWMA,OUTPUT);                     
-  pinMode(AIN2,OUTPUT);      
-  pinMode(AIN1,OUTPUT);
-  pinMode(PWMB,OUTPUT);       
-  pinMode(AIN1,OUTPUT);     
-  pinMode(AIN2,OUTPUT);  
-  
-  pinMode(knop, INPUT);
-  digitalWrite(knop, knopStatus);
+  pinMode(PWMA, OUTPUT);
+  pinMode(AIN2, OUTPUT);
+  pinMode(AIN1, OUTPUT);
+  pinMode(PWMB, OUTPUT);
+  pinMode(AIN1, OUTPUT);
+  pinMode(AIN2, OUTPUT);
+
+
 }
 
 void loop() {
   // lees sensorwaarden
   /*knop7 = digitalRead(pin7Knop);
-  knop8 = digitalRead(pin8Knop);*/
-
+    knop8 = digitalRead(pin8Knop);*/
+  PCF8574Write(0x1F | PCF8574Read());
+  value = PCF8574Read() | 0xE0;
+  if(value != 0xEF)
+  {
+    toestand = START;
+    Serial.println("knop geklikt");
+    value = 0;
+  }
   // bepaal toestand
   if (toestand == START) {
-    knopStatus = digitalRead(knop);
-    if (knopStatus == HIGH) {
-     toestand = SENSOR_LEZEN;
-    }
+
+    toestand = SENSOR_LEZEN;
+
   }
 
-  
+
   if (toestand == SENSOR_LEZEN) {
     if (lijn = true) {
-     toestand = RIJDEN;
+      toestand = RIJDEN;
     }
-    
+
     if (lijn = false) {
       toestand = DRAAIEN;
     }
   }
 
-  
+
   if (toestand == RIJDEN) {
-    
+
   }
 
-  
+
   if (toestand == DRAAIEN) {
-    
+
   }
 
   // zet stoplichten conform toestand
   if (toestand == START) {
-    for (int i = 0; i < 400; i++)  // make the calibration take about 10 seconds
-     {
-      trs.calibrate();       // reads all sensors 10 times
-     }
-    Serial.println("calibrate done");
-    // print the calibration minimum values measured when emitters were on
-    for (int i = 0; i < NUM_SENSORS; i++)
-     {
-      Serial.print(trs.calibratedMin[i]);
-      Serial.print(' ');
-     }
-    Serial.println();
-    
-    // print the calibration maximum values measured when emitters were on
-    for (int i = 0; i < NUM_SENSORS; i++)
-     {
-      Serial.print(trs.calibratedMax[i]);
-      Serial.print(' ');
-     }
-    Serial.println();
+    Serial.println("START");
+    analogWrite(PWMA, 80);
+    analogWrite(PWMB, 80);
+    for (int i = 0; i < 100; i++)  // make the calibration take about 10 seconds
+    {
+      if (i < 25 || i >= 75)
+      {
+        digitalWrite(AIN1, HIGH);
+        digitalWrite(AIN2, LOW);
+        digitalWrite(BIN1, LOW);
+        digitalWrite(BIN2, HIGH);
+      }
+      else
+      {
+        digitalWrite(AIN1, LOW);
+        digitalWrite(AIN2, HIGH);
+        digitalWrite(BIN1, HIGH);
+        digitalWrite(BIN2, LOW);
+      }
+      trs.calibrate();       // reads all sensors 100 times
+    }
   }
 
-  
+
   if (toestand == SENSOR_LEZEN) {
     for (int i = 1; i <= 8; i = i + 1) {
-      
+
     }
   }
 
   if (toestand == RIJDEN) {
     for (int i = 1; i <= 8; i = i + 1) {
-      analogWrite(PWMA,50);
-      digitalWrite(AIN1,LOW);
-      digitalWrite(AIN2,HIGH);
-      analogWrite(PWMB,50);
-      digitalWrite(BIN1,LOW); 
-      digitalWrite(BIN2,HIGH);
+      analogWrite(PWMA, 50);
+      digitalWrite(AIN1, LOW);
+      digitalWrite(AIN2, LOW);
+      analogWrite(PWMB, 50);
+      digitalWrite(BIN1, LOW);
+      digitalWrite(BIN2, LOW);
     }
   }
 
-  
+
   if (toestand == DRAAIEN) {
     for (int i = 1; i <= 6; i = i + 1) {
-      analogWrite(PWMA,50);
-      digitalWrite(AIN1,LOW);
-      digitalWrite(AIN2,HIGH);
-      analogWrite(PWMB,50);
-      digitalWrite(BIN1,HIGH); 
-      digitalWrite(BIN2,LOW);
+      analogWrite(PWMA, 50);
+      digitalWrite(AIN1, LOW);
+      digitalWrite(AIN2, LOW);
+      analogWrite(PWMB, 50);
+      digitalWrite(BIN1, LOW);
+      digitalWrite(BIN2, LOW);
     }
   }
+  
+  
 
   // vertraging om te zorgen dat berichten op de seriele monitor leesbaar blijven
   delay(100);
