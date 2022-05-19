@@ -31,26 +31,8 @@ int toestand = 0;
 #define BIN1   A2          //Motor-R forward (IN3)
 #define BIN2   A3          //Motor-R backward (IN4)
 
-
-
 bool lijn = false;
 
-void PCF8574Write(byte data)
-  {
-    Wire.beginTransmission(Addr);
-    Wire.write(data);
-    Wire.endTransmission();
-  }
-
-byte PCF8574Read()
-  {
-    int data = -1;
-    Wire.requestFrom(Addr, 1);
-    if (Wire.available()) {
-      data = Wire.read();
-    }
-    return data;
-  }
   
 void setup() {
   Serial.begin(115200);
@@ -62,21 +44,22 @@ void setup() {
   pinMode(AIN1, OUTPUT);
   pinMode(AIN2, OUTPUT);
 
-
 }
+
 
 void loop() {
   // lees sensorwaarden
   /*knop7 = digitalRead(pin7Knop);
     knop8 = digitalRead(pin8Knop);*/
-  PCF8574Write(0x1F | PCF8574Read());
-  value = PCF8574Read() | 0xE0;
-  if(value != 0xEF)
+  while(value != 0xEF)  //wait button pressed
   {
+    PCF8574Write(0x1F | PCF8574Read());
+    value = PCF8574Read() | 0xE0;
     toestand = START;
     Serial.println("knop geklikt");
-    value = 0;
   }
+
+  
   // bepaal toestand
   if (toestand == START) {
 
@@ -165,3 +148,20 @@ void loop() {
   // vertraging om te zorgen dat berichten op de seriele monitor leesbaar blijven
   delay(100);
 }
+
+void PCF8574Write(byte data)
+  {
+    Wire.beginTransmission(Addr);
+    Wire.write(data);
+    Wire.endTransmission();
+  }
+
+byte PCF8574Read()
+  {
+    int data = -1;
+    Wire.requestFrom(Addr, 1);
+    if (Wire.available()) {
+      data = Wire.read();
+    }
+    return data;
+  }
