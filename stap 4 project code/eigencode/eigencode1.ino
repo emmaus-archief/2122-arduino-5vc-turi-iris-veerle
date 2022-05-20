@@ -19,9 +19,8 @@ void PCF8574Write(byte data);
 byte PCF8574Read();
 
 const int START = 1; // toestand is kalibreren
-const int SENSOR_LEZEN = 2; // toestand is sensor lezen
-const int RIJDEN = 3; // toestand is rijden in de richtingvan de lijn
-const int DRAAIEN = 4; // toestand is draaien
+const int RIJDEN = 2; // toestand is rijden in de richtingvan de lijn
+const int DRAAIEN = 3; // toestand is draaien
 int toestand = START;
 
 #define PWMA   6           //Left Motor Speed pin (ENA)
@@ -33,6 +32,7 @@ int toestand = START;
 
 bool lijn = true;
 unsigned int position;
+int proportional;
 unsigned long lasttime = 0;
 void setup() {
   Serial.begin(115200);
@@ -63,52 +63,38 @@ void loop() {
   */
   // bepaal toestand
   if (toestand == START) {
-    if (millis() - lasttime > 10000) {
+    if (millis() - lasttime > 5000) {
       lasttime = millis();
       Serial.println( "START klaar");
-      toestand = SENSOR_LEZEN;
-    }
-  }
-
-
-  if (toestand == SENSOR_LEZEN) {
-    if (millis() - lasttime > 400 && lijn == true) {
-      lasttime = millis();
-      Serial.println( "SENSOR_LEZEN klaar");
       toestand = RIJDEN;
     }
-
-    if (millis() - lasttime > 400 && lijn == false) {
-      lasttime = millis();
-      Serial.println( "SENSOR_LEZEN klaar");
-      toestand = DRAAIEN;
-    }
-
   }
+
+
 
 
   if (toestand == RIJDEN) {
-    if (millis() - lasttime > 200) {
+    if (proportional < -500 || proportional > 500) {
       lasttime = millis();
       Serial.println( "klaar rijden");
-      toestand = SENSOR_LEZEN;
+      toestand = DRAAIEN;
     }
   }
-
 
   if (toestand == DRAAIEN) {
-    if (millis() - lasttime > 4000) {
+    if (millis() - lasttime > 1000  ) {
       lasttime = millis();
-      Serial.println( "draaien klaar");
-      toestand = SENSOR_LEZEN;
+      Serial.println( "DRAAIEN klaar");
+      toestand = RIJDEN;
     }
   }
 
-  // zet stoplichten conform toestand
+
+  // zet Robot conform toestand
   if (toestand == START) {
     Serial.println("START");
-    analogWrite(PWMA, 80);
-    analogWrite(PWMB, 80);
+    analogWrite(PWMA, 60);
+    analogWrite(PWMB, 60);
     for (int i = 0; i < 100; i++)  // make the calibration take about 10 seconds
     {
       if (i < 25 || i >= 75)
@@ -137,42 +123,52 @@ void loop() {
   }
 
 
-  if (toestand == SENSOR_LEZEN) {
-    for (int i = 1; i <= 4; i = i + 1) {
-      unsigned int position = trs.readLine(sensorValues);
-      Serial.println("sensor lezen begin");
-      // print the sensor values as numbers from 0 to 1000, where 0 means maximum reflectance and
-      // 1000 means minimum reflectance, followed by the line position
-      for (unsigned char i = 0; i < NUM_SENSORS; i++)
-      {
-        Serial.print(sensorValues[i]);
-        Serial.print('\t');
-      }
+  /* if (toestand == SENSOR_LEZEN) {
+     for (int i = 1; i <= 4; i = i + 1) {
+       position = trs.readLine(sensorValues);
+       int proportional = (int)position - 2000;
+       Serial.println("sensor lezen begin");
+       // print the sensor values as numbers from 0 to 1000, where 0 means maximum reflectance and
+       // 1000 means minimum reflectance, followed by the line position
+       for (unsigned char i = 0; i < NUM_SENSORS; i++)
+       {
+         Serial.print(sensorValues[i]);
+         Serial.print('\t');
+       }
+       Serial.println();
+       Serial.print(position); // comment this line out if you are using raw values
+       Serial.println();
+       Serial.print(proportional);
+       Serial.println();
 
-      Serial.print(position); // comment this line out if you are using raw values
-      Serial.println();
-
+     }
     }
-    toestand = RIJDEN;
-  }
+  */
+
 
   if (toestand == RIJDEN) {
     Serial.println( "rijden");
+    position = trs.readLine(sensorValues);
+    proportional = (int)position - 2000;
 
-    analogWrite(PWMA, 50);
+    Serial.print("Het midden van de lijn zit op positie: ");
+    Serial.println(proportional);
+
+  
+    analogWrite(PWMA, 51);
     digitalWrite(AIN1, LOW);
-    digitalWrite(AIN2, LOW);
+    digitalWrite(AIN2, HIGH);
     analogWrite(PWMB, 50);
     digitalWrite(BIN1, LOW);
-    digitalWrite(BIN2, LOW);
+    digitalWrite(BIN2, HIGH);
 
 
   }
 
 
   if (toestand == DRAAIEN) {
-    Serial.println( "DRAAIEN");
-    
+    // Serial.println( "DRAAIEN");
+
     analogWrite(PWMA, 50);
     digitalWrite(AIN1, LOW);
     digitalWrite(AIN2, HIGH);
