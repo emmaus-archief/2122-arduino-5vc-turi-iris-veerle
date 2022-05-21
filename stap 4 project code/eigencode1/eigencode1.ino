@@ -52,8 +52,6 @@ void setup() {
 
 void loop() {
   // lees sensorwaarden
-  /*knop7 = digitalRead(pin7Knop);
-    knop8 = digitalRead(pin8Knop);*/
   /* while (value != 0xEF) //wait button pressed
     {
      PCF8574Write(0x1F | PCF8574Read());
@@ -138,29 +136,6 @@ void loop() {
     }
 
   }
-
-
-  /* if (toestand == SENSOR_LEZEN) {
-     for (int i = 1; i <= 4; i = i + 1) {
-       position = trs.readLine(sensorValues);
-       int proportional = (int)position - 2000;
-       Serial.println("sensor lezen begin");
-       // print the sensor values as numbers from 0 to 1000, where 0 means maximum reflectance and
-       // 1000 means minimum reflectance, followed by the line position
-       for (unsigned char i = 0; i < NUM_SENSORS; i++)
-       {
-         Serial.print(sensorValues[i]);
-         Serial.print('\t');
-       }
-       Serial.println();
-       Serial.print(position); // comment this line out if you are using raw values
-       Serial.println();
-       Serial.print(proportional);
-       Serial.println();
-
-     }
-    }
-  */
 
 
   if (toestand == RIJDEN) {
