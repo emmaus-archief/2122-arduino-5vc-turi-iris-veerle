@@ -1,8 +1,22 @@
-#include <Adafruit_NeoPixel.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
 #include "TRSensors.h"
 #include <Wire.h>
+
+#define NUM_SENSORS 5 // alle 5 de ir, sensors 0 through 5 are connected to analog inputs 0 through 5, respectively
+TRSensors trs =   TRSensors();
+unsigned int sensorValues[NUM_SENSORS];
+
+#define Addr  0x20
+#define beep_on  PCF8574Write(0xDF & PCF8574Read())
+#define beep_off PCF8574Write(0x20 | PCF8574Read())
+byte value;
+void PCF8574Write(byte data);
+byte PCF8574Read();
+
+const int START = 1; // toestand is kalibreren
+const int RIJDEN = 2; // toestand is rijden in de richtingvan de lijn
+const int DRAAIENL = 3; // toestand is draaien linksom
+const int DRAAIENR = 4; // toestand is draaien rechtsom
+int toestand = START;
 
 #define PWMA   6           //Left Motor Speed pin (ENA)
 #define AIN2   A0          //Motor-L forward (IN2).
@@ -10,27 +24,11 @@
 #define PWMB   5           //Right Motor Speed pin (ENB)
 #define BIN1   A2          //Motor-R forward (IN3)
 #define BIN2   A3          //Motor-R backward (IN4)
-#define PIN 7
-#define NUM_SENSORS 5
-#define OLED_RESET 9
-#define OLED_SA0   8
-#define Addr 0x20
 
-#define beep_on  PCF8574Write(0xDF & PCF8574Read())
-#define beep_off PCF8574Write(0x20 | PCF8574Read())
-TRSensors trs =   TRSensors();
-unsigned int sensorValues[NUM_SENSORS];
-unsigned int last_proportional = 0;
 unsigned int position;
-long integral = 0;
-uint16_t i, j;
-byte value;
+int proportional;
 unsigned long lasttime = 0;
-Adafruit_NeoPixel RGB = Adafruit_NeoPixel(4, PIN, NEO_GRB + NEO_KHZ800);
-
-void PCF8574Write(byte data);
-byte PCF8574Read();
-uint32_t Wheel(byte WheelPos);
+int snelheid;
 
 
 void setup() {
