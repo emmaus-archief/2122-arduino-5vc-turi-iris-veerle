@@ -31,7 +31,7 @@ int toestand = START;
 #define BIN1   A2          //Motor-R forward (IN3)
 #define BIN2   A3          //Motor-R backward (IN4)
 
-bool lijn = true;
+
 unsigned int position;
 int proportional;
 unsigned long lasttime = 0;
